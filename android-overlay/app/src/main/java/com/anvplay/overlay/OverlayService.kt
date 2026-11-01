@@ -45,7 +45,15 @@ class OverlayService : Service() {
     override fun onCreate() {
         super.onCreate()
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        FirebaseApp.initializeApp(this)
+        if (FirebaseApp.getApps(this).isEmpty()) {
+            val options = com.google.firebase.FirebaseOptions.Builder()
+                .setApiKey("AIzaSyA6VCyc_-MutGZzx2LRh--Ff3Wkw0zWuc")
+                .setApplicationId("1:343859706516:android:anvplaytv")
+                .setProjectId("anv-play")
+                .setStorageBucket("anv-play.firebasestorage.app")
+                .build()
+            FirebaseApp.initializeApp(this, options)
+        }
         val db = FirebaseFirestore.getInstance()
         registration = db.collection("unit_status").document("PS3 Unit 1")
             .addSnapshotListener { snapshot, error ->
