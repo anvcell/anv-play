@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AnV Play</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#071426;color:white;font-family:Arial,sans-serif}
+header{padding:22px;background:#102944;border-bottom:2px solid #16cfff}
+h1{margin:0;color:#25d9ff}
+main{max-width:1000px;margin:auto;padding:20px}
+.card{background:#102944;border:1px solid #285477;border-radius:14px;padding:18px;margin:12px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.price{color:#28dfff;font-size:23px;font-weight:bold}
+button{background:#087fca;color:white;border:0;border-radius:8px;padding:11px 15px;margin:4px;cursor:pointer}
+input,select{width:100%;padding:12px;margin:6px 0 14px;border-radius:7px;border:1px solid #42617e;background:#071a2d;color:white}
+label{display:block;color:#b8d5ed}
+.timer{font-size:28px;color:#25d9ff;font-weight:bold}
+.tabs{margin:15px 0}
+.hidden{display:none}
+small{color:#9bb4cb}
+</style>
+</head>
+<body>
+<header>
+<h1>ANV PLAY 🎮</h1>
+<small>RENTAL PLAYSTATION • 07.00–23.00 WIB</small>
+</header>
+<main>
+<div class="tabs">
+<button onclick="show('booking')">BOOKING PELANGGAN</button>
+<button onclick="show('admin')">DASHBOARD ADMIN</button>
+</div>
+
+<section id="booking">
+<h2>Booking PlayStation</h2>
+<p><small>Booking gratis tanpa DP dan menunggu persetujuan admin.</small></p>
+<div class="grid">
+<div class="card"><h3>PS3 Unit 1</h3><div class="price">Rp5.000/jam</div></div>
+<div class="card"><h3>PS3 Unit 2</h3><div class="price">Rp5.000/jam</div></div>
+<div class="card"><h3>PS4 Unit 1</h3><div class="price">Rp10.000/jam</div></div>
+</div>
+<div class="card">
+<form id="form">
+<label>Nama pelanggan</label>
+<input id="nama" required>
+<label>Nomor WhatsApp</label>
+<input id="wa" required>
+<label>Pilih konsol</label>
+<select id="unit">
+<option value="PS3 Unit 1">PS3 Unit 1</option>
+<option value="PS3 Unit 2">PS3 Unit 2</option>
+<option value="PS4 Unit 1">PS4 Unit 1</option>
+</select>
+<label>Tanggal</label>
+<input id="tanggal" type="date" required>
+<label>Jam mulai</label>
+<input id="jam" type="time" min="07:00" max="22:59" required>
+<label>Durasi sendiri (menit)</label>
+<input id="durasi" type="number" min="15" step="15" value="60" required>
+<p id="biaya">Perkiraan biaya: Rp5.000</p>
+<button type="submit">KIRIM BOOKING</button>
+</form>
+</div>
+<div class="card">
+<h3>Status Booking Saya</h3>
+<div id="status">Belum ada booking.</div>
+</div>
+</section>
+
+<section id="admin" class="hidden">
+<h2>Dashboard Admin</h2>
+<div class="grid" id="konsol"></div>
+<div class="card">
+<h3>Daftar Booking</h3>
+<div id="daftar"></div>
+</div>
+</section>
+</main>
+
+<script>
+const harga={"PS3 Unit 1":5000,"PS3 Unit 2":5000,"PS4 Unit 1":10000};
+let data=JSON.parse(localStorage.getItem("anvbooking")||"[]");
+let timer=JSON.parse(localStorage.getItem("anvtimer")||"{}");
+
+function show(id){
+document.getElementById("booking").classList.toggle("hidden",id!=="booking");
+document.getElementById("admin").classList.toggle("hidden",id!=="admin");
+if(id==="admin")render();
+}
+
+function rupiah(n){return "Rp"+Math.round(n).toLocaleString("id-ID")}
+
+function biaya(){
+let unit=document.getElementById("unit").value;
+let menit=Number(document.getElementById("durasi").value)||0;
+document.getElementById("biaya").innerText="Perkiraan biaya: "+rupiah(harga[unit]*menit/60);
+}
+unit.onchange=biaya;
+durasi.oninput=biaya;
+biaya();
+
+form.onsubmit=function(e){
+e.preventDefault();
+let jamMulai=jam.value;
+let [h,m]=jamMulai.split(":").map(Number);
+let menit=Number(durasi.value);
+if(h<7||h*60+m+menit>1380){
+alert("Jadwal harus selesai paling lambat pukul 23.00.");
+return;
+}
+let b={
+id:Date.now(),nama:nama.value,wa:wa.value,
+unit:unit.value,tanggal:tanggal.value,jam:jamMulai,
+durasi:menit,biaya:harga[unit.value]*menit/60,
+status:"Menunggu"
+};
+data.push(b);
+localStorage.setItem("anvbooking",JSON.stringify(data));
+status.innerText="Booking "+b.unit+" berhasil dikirim. Menunggu persetujuan admin.";
+form.reset();biaya();
+};
+
+function render(){
+let names=Object.keys(harga);
+konsol.innerHTML=names.map(n=>{
+let t=timer[n]||{detik:0,aktif:false};
+return `<div class="card">
+<h3>${n}</h3><div class="price">${rupiah(harga[n])}/jam</div>
+<div class="timer" id="t${names.indexOf(n)}">${format(t.detik)}</div>
+<button onclick="mulai('${n}')">Mulai</button>
+<button onclick="jeda('${n}')">Jeda/Lanjut</button>
+<button onclick="tambah('${n}')">+15 Menit</button>
+<button onclick="selesai('${n}')">Selesai</button>
+</div>`;
+}).join("");
+
+daftar.innerHTML=data.length?data.slice().reverse().map(b=>`
+<div class="card">
+<b>${b.nama}</b> — ${b.unit}<br>
+${b.tanggal} ${b.jam} · ${b.durasi} menit<br>
+${rupiah(b.biaya)} · Status: ${b.status}<br>
+${b.status==="Menunggu"?`
+<button onclick="setujui(${b.id})">Setujui</button>
+<button onclick="tolak(${b.id})">Tolak</button>`:""}
+</div>`).join(""):"Belum ada booking.";
+}
+
+function format(s){
+return [Math.floor(s/3600),Math.floor(s%3600/60),s%60]
+.map(x=>String(x).padStart(2,"0")).join(":");
+}
+function simpan(){localStorage.setItem("anvtimer",JSON.stringify(timer))}
+function mulai(n){
+timer[n]=timer[n]||{detik:0,aktif:false};
+timer[n].aktif=true;simpan();render();
+}
+function jeda(n){
+timer[n]=timer[n]||{detik:0,aktif:false};
+timer[n].aktif=!timer[n].aktif;simpan();render();
+}
+function tambah(n){
+timer[n]=timer[n]||{detik:0,aktif:false};
+timer[n].detik+=900;simpan();render();
+}
+function selesai(n){
+let t=timer[n]||{detik:0};
+alert("Durasi: "+Math.ceil(t.detik/60)+" menit. Biaya: "+rupiah(harga[n]*t.detik/3600));
+timer[n]={detik:0,aktif:false};simpan();render();
+}
+function setujui(id){
+let b=data.find(x=>x.id===id);b.status="Disetujui";
+localStorage.setItem("anvbooking",JSON.stringify(data));render();
+}
+function tolak(id){
+let b=data.find(x=>x.id===id);b.status="Ditolak";
+localStorage.setItem("anvbooking",JSON.stringify(data));render();
+}
+setInterval(()=>{
+Object.keys(timer).forEach((n,i)=>{
+if(timer[n].aktif){
+timer[n].detik++;
+let el=document.getElementById("t"+i);
+if(el)el.innerText=format(timer[n].detik);
+}
+});
+simpan();
+},1000);
+</script>
+</body>
+</html>
