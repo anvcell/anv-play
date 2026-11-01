@@ -81,6 +81,16 @@ small{color:#9bb4cb}
 
 <script>
 const harga={"PS3 Unit 1":5000,"PS3 Unit 2":5000,"PS4 Unit 1":10000};
+const unit = document.getElementById("unit");
+const durasi = document.getElementById("durasi");
+const form = document.getElementById("form");
+const nama = document.getElementById("nama");
+const wa = document.getElementById("wa");
+const tanggal = document.getElementById("tanggal");
+const jam = document.getElementById("jam");
+const status = document.getElementById("status");
+const konsol = document.getElementById("konsol");
+const daftar = document.getElementById("daftar");
 let data=JSON.parse(localStorage.getItem("anvbooking")||"[]");
 let timer=JSON.parse(localStorage.getItem("anvtimer")||"{}");
 
