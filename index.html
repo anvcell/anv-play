@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#071426">
+<title>AnV Play | Rental PlayStation</title>
+<style>
+:root{--bg:#06111f;--panel:#0d2035;--panel2:#102b46;--line:#1c496b;--cyan:#25d9ff;--muted:#a9bfd2;--green:#28d17c;--red:#ff647c}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top right,#12395b 0,#06111f 42%);color:#f3f8ff;font-family:Arial,sans-serif;min-height:100vh}
+header{padding:22px 16px;border-bottom:1px solid var(--line);background:#081a2bdc;position:sticky;top:0;z-index:2;backdrop-filter:blur(10px)}
+.wrap{max-width:1050px;margin:auto}h1{margin:0;color:var(--cyan);letter-spacing:2px;font-size:26px}header small,.muted{color:var(--muted)}main{max-width:1050px;margin:auto;padding:20px 15px 50px}
+.hero{padding:24px 4px 12px}.hero h2{font-size:clamp(25px,5vw,38px);margin:8px 0}.hero p{color:var(--muted);line-height:1.6}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}.tab,button{border:0;border-radius:10px;padding:12px 16px;background:#087fca;color:white;font-weight:700;cursor:pointer}.tab{background:#102b46;border:1px solid var(--line)}.tab.active{background:#087fca;border-color:var(--cyan)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.card{background:linear-gradient(145deg,#102b46,#0b1d30);border:1px solid var(--line);border-radius:16px;padding:18px;margin:12px 0;box-shadow:0 12px 30px #0003}
+.price{font-size:23px;color:var(--cyan);font-weight:bold;margin:8px 0}.status{font-size:12px;color:var(--green);font-weight:bold}label{display:block;color:#c4d8e9;margin:12px 0 6px}input,select{width:100%;padding:13px;border-radius:9px;border:1px solid #315878;background:#071a2c;color:white;font-size:16px}button.secondary{background:#24435f}button.danger{background:#a92e49}button.good{background:#087b55}.hidden{display:none!important}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.row button{flex:1}.timer{font-size:28px;color:var(--cyan);font-weight:bold;margin:12px 0}.booking{border-top:1px solid var(--line);padding:12px 0}.pill{display:inline-block;border-radius:20px;padding:5px 9px;background:#173e5d;color:#bcefff;font-size:12px}.notice{padding:12px;border-radius:10px;background:#102b46;color:var(--muted);line-height:1.5}footer{text-align:center;color:#7894aa;padding:20px;font-size:12px}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>ANV PLAY 🎮</h1><small>RENTAL PLAYSTATION · SETIAP HARI 07.00–23.00 WIB</small></div></header>
+<main>
+<section class="hero"><span class="pill">GAMING • FUN • PLAY</span><h2>Main puas, waktu terpantau.</h2><p>Booking rental PlayStation AnV Play dengan mudah. Pilih unit, tanggal, jam mulai, dan durasi permainan.</p></section>
+<div class="tabs"><button class="tab active" id="tabBooking" onclick="showPage('booking')">Booking pelanggan</button><button class="tab" id="tabAdmin" onclick="adminLogin()">Admin</button></div>
+<section id="bookingPage">
+<div class="grid">
+<div class="card"><span class="pill">PS3</span><h3>PS3 Unit 1</h3><div class="price">Rp5.000 <small>/ jam</small></div><span class="status">● Tersedia untuk booking</span></div>
+<div class="card"><span class="pill">PS3</span><h3>PS3 Unit 2</h3><div class="price">Rp5.000 <small>/ jam</small></div><span class="status">● Tersedia untuk booking</span></div>
+<div class="card"><span class="pill">PS4</span><h3>PS4 Unit 1</h3><div class="price">Rp10.000 <small>/ jam</small></div><span class="status">● Tersedia untuk booking</span></div>
+</div>
+<div class="card"><h2>Form Booking</h2><form id="bookingForm">
+<label>Nama pelanggan</label><input id="nama" required maxlength="60" placeholder="Nama lengkap">
+<label>Nomor WhatsApp</label><input id="wa" required inputmode="tel" placeholder="08xxxxxxxxxx">
+<label>Pilih unit</label><select id="unit"><option>PS3 Unit 1</option><option>PS3 Unit 2</option><option>PS4 Unit 1</option></select>
+<label>Tanggal bermain</label><input id="tanggal" type="date" required>
+<label>Jam mulai</label><input id="jam" type="time" min="07:00" max="22:59" required>
+<label>Durasi (menit)</label><input id="durasi" type="number" min="15" step="15" value="60" required>
+<p class="price" id="biaya">Perkiraan biaya: Rp5.000</p>
+<button type="submit">Kirim permintaan booking</button>
+</form><p class="notice">Booking berstatus menunggu persetujuan admin. Datang maksimal 15 menit setelah jam booking. Untuk saat ini data booking tersimpan di browser/perangkat ini saja.</p><div id="status" class="muted"></div></div>
+</section>
+<section id="adminPage" class="hidden">
+<div class="card"><div class="row"><h2 style="flex:1">Dashboard Admin</h2><button class="secondary" onclick="logout()">Keluar</button></div><p class="muted">Data pada dashboard ini tersimpan di browser/perangkat yang digunakan.</p></div>
+<div class="grid" id="konsol"></div>
+<div class="card"><h2>Daftar Booking</h2><div id="daftar"></div></div>
+</section>
+</main>
+<footer>© AnV Play · Sistem pencatatan awal</footer>
+<script>
+const harga={"PS3 Unit 1":5000,"PS3 Unit 2":5000,"PS4 Unit 1":10000};
+const $=id=>document.getElementById(id);
+let data=[];let timers={};
+try{data=JSON.parse(localStorage.getItem("anvplay_booking")||"[]");timers=JSON.parse(localStorage.getItem("anvplay_timers")||"{}")}catch(e){data=[];timers={}}
+function save(){localStorage.setItem("anvplay_booking",JSON.stringify(data));localStorage.setItem("anvplay_timers",JSON.stringify(timers))}
+function rupiah(n){return "Rp"+Math.round(n).toLocaleString("id-ID")}
+function biaya(){let u=$("unit").value,m=Number($("durasi").value)||0;$("biaya").textContent="Perkiraan biaya: "+rupiah(harga[u]*m/60)}
+$("unit").addEventListener("change",biaya);$("durasi").addEventListener("input",biaya);biaya();
+$("tanggal").min=new Date().toLocaleDateString("en-CA");
+function showPage(page){$("bookingPage").classList.toggle("hidden",page!=="booking");$("adminPage").classList.toggle("hidden",page!=="admin");$("tabBooking").classList.toggle("active",page==="booking");$("tabAdmin").classList.toggle("active",page==="admin");if(page==="admin")render()}
+function adminLogin(){let p=prompt("Masukkan PIN admin:");if(p==="2580"){showPage("admin")}else if(p!==null){alert("PIN salah.")}}
+function logout(){showPage("booking")}
+$("bookingForm").addEventListener("submit",e=>{e.preventDefault();let date=$("tanggal").value,time=$("jam").value,duration=Number($("durasi").value),unit=$("unit").value;if(time<"07:00"||time>"22:59"){alert("Jam booking harus antara 07.00 sampai 22.59.");return}if(duration<15||duration%15){alert("Durasi minimal 15 menit dan kelipatan 15 menit.");return}let start=new Date(date+"T"+time+":00"),end=new Date(start.getTime()+duration*60000);if(start<new Date()){alert("Pilih waktu yang belum lewat.");return}if(end.getHours()>23||(end.getHours()===23&&end.getMinutes()>0)){alert("Waktu bermain harus selesai paling lambat pukul 23.00.");return}
+let clash=data.some(b=>b.unit===unit&&b.status!=="Ditolak"&&b.status!=="Dibatalkan"&&b.status!=="Selesai"&&b.tanggal===date&&new Date(date+"T"+b.jam+":00")<end&&new Date(date+"T"+b.jam+":00").getTime()+Number(b.durasi)*60000>start.getTime());
+if(clash){alert("Jadwal ini bertabrakan dengan booking yang sudah tercatat. Silakan pilih waktu lain.");return}
+let item={id:Date.now(),nama:$("nama").value.trim(),wa:$("wa").value.trim(),unit,tanggal:date,jam:time,durasi:duration,biaya:harga[unit]*duration/60,status:"Menunggu"};data.unshift(item);save();$("bookingForm").reset();$("durasi").value=60;biaya();$("status").textContent="Permintaan booking terkirim. Silakan hubungi admin untuk konfirmasi.";alert("Permintaan booking tersimpan. Status: Menunggu persetujuan admin.");});
+function render(){let units=Object.keys(harga);$("konsol").innerHTML=units.map(u=>{let t=timers[u]||{};return '<div class="card"><span class="pill">'+u+'</span><div class="price">'+rupiah(harga[u])+' / jam</div><div class="timer" id="clock_'+u.replaceAll(" ","_")+'">'+(t.end?clockText(t.end):"00:00:00")+'</div><div class="row"><button onclick="startTimer(\''+u+'\')">Mulai</button><button class="secondary" onclick="pauseTimer(\''+u+'\')">Jeda</button><button class="good" onclick="addTime(\''+u+'\')">+15 menit</button><button class="danger" onclick="stopTimer(\''+u+'\')">Selesai</button></div><small class="muted">'+(t.running?"Timer berjalan":t.paused?"Timer dijeda":"Belum mulai")+'</small></div>'}).join("");
+$("daftar").innerHTML=data.length?data.map(b=>'<div class="booking"><b>'+esc(b.nama)+'</b> · '+esc(b.unit)+'<br><small>'+esc(b.tanggal)+' '+esc(b.jam)+' · '+b.durasi+' menit · '+rupiah(b.biaya)+'</small><p>Status: <span class="pill">'+b.status+'</span></p><div class="row">'+(b.status==="Menunggu"?'<button class="good" onclick="approve('+b.id+')">Setujui</button><button class="danger" onclick="reject('+b.id+')">Tolak</button>':'')+'<button class="secondary" onclick="wa('+b.id+')">WhatsApp</button></div></div>').join(""):'<p class="muted">Belum ada booking.</p>'}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function approve(id){let b=data.find(x=>x.id===id);if(b){b.status="Disetujui";save();render()}}
+function reject(id){let b=data.find(x=>x.id===id);if(b){b.status="Ditolak";save();render()}}
+function wa(id){let b=data.find(x=>x.id===id);if(b){let phone=b.wa.replace(/\D/g,"").replace(/^0/,"62");let msg=encodeURIComponent("Halo "+b.nama+", booking AnV Play "+b.unit+" tanggal "+b.tanggal+" pukul "+b.jam+" selama "+b.durasi+" menit. Status: "+b.status+".");window.open("https://wa.me/"+phone+"?text="+msg,"_blank")}}
+function clockText(end){let s=Math.max(0,Math.floor((end-Date.now())/1000));return [Math.floor(s/3600),Math.floor(s%3600/60),s%60].map(n=>String(n).padStart(2,"0")).join(":")}
+function startTimer(u){let t=timers[u]||{};if(t.running)return;let mins=Number(prompt("Durasi bermain (menit):","60"));if(!mins||mins<1)return;t={end:Date.now()+mins*60000,running:true,paused:false,remaining:mins*60000};timers[u]=t;save();render()}
+function pauseTimer(u){let t=timers[u];if(!t||!t.running)return;t.remaining=Math.max(0,t.end-Date.now());t.running=false;t.paused=true;save();render()}
+function addTime(u){let t=timers[u];if(!t){alert("Mulai timer terlebih dahulu.");return}if(t.running)t.end+=15*60000;else if(t.paused){t.remaining+=15*60000;t.end=Date.now()+t.remaining}save();render()}
+function stopTimer(u){if(!timers[u])return;if(!confirm("Akhiri timer "+u+"?"))return;delete timers[u];save();render()}
+setInterval(()=>{if(!$("adminPage").classList.contains("hidden"))Object.keys(harga).forEach(u=>{let el=$("clock_"+u.replaceAll(" ","_")),t=timers[u];if(el&&t){if(t.running&&t.end<=Date.now()){t.running=false;t.paused=false;t.remaining=0;save();el.textContent="00:00:00"}else el.textContent=t.running?clockText(t.end):t.paused?clockText(Date.now()+t.remaining):"00:00:00"}})},1000);
+</script>
+</body></html>
