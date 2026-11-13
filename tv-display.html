@@ -34,7 +34,7 @@ footer{text-align:center;color:#7894aa;padding:20px;font-size:12px}
 <form id="loginForm"><label>Email admin</label><input id="email" type="email" autocomplete="username" required placeholder="Email admin AnV Play"><label>Password</label><input id="password" type="password" autocomplete="current-password" required placeholder="Password"><p><button id="loginBtn" type="submit">Masuk</button></p></form><div id="loginMsg" class="muted" role="status"></div>
 </section>
 <section id="manager" class="hidden">
-<div class="card"><div class="row"><div><h2>Upload gambar</h2><p class="muted">Pilih satu atau beberapa foto sekaligus. Format JPG, PNG, atau WebP. Maksimal 10 MB per foto.</p></div><button class="secondary" id="logoutBtn" style="flex:0 0 auto">Keluar</button></div>
+<div class="card"><div class="row"><div><h2>Upload gambar</h2><p class="muted">Pilih foto dari galeri. Foto otomatis diperkecil agar muat di penyimpanan gratis Firestore.</p></div><button class="secondary" id="logoutBtn" style="flex:0 0 auto">Keluar</button></div>
 <label for="files">Pilih gambar dari galeri HP</label><input id="files" type="file" accept="image/jpeg,image/png,image/webp" multiple>
 <div class="row" style="margin-top:14px"><button id="uploadBtn">Upload gambar</button><button class="secondary" id="openTvBtn">Buka tampilan TV</button></div><p id="uploadMsg" class="muted" role="status"></p>
 </div>
@@ -52,9 +52,8 @@ footer{text-align:center;color:#7894aa;padding:20px;font-size:12px}
 import {initializeApp} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
 import {getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
 import {getFirestore,collection,addDoc,deleteDoc,doc,onSnapshot,query,orderBy} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
-import {getStorage,ref,uploadBytes,getDownloadURL,deleteObject} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-storage.js";
 const firebaseConfig={apiKey:"AIzaSyA6VCyc_-MutGZzx2LRh--Ff3WQkwz0wuc",authDomain:"anv-play.firebaseapp.com",projectId:"anv-play",storageBucket:"anv-play.firebasestorage.app",messagingSenderId:"343859706516",appId:"1:343859706516:web:2158c8e6e4a4b767339281",measurementId:"G-T1S0QTQ72B"};
-const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app),storage=getStorage(app);
+const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
 const ADMIN="anvcellular@gmail.com",mode=new URLSearchParams(location.search).get("mode");
 const $=id=>document.getElementById(id);let slides=[],unsubscribe=null,timer=null,current=0;
 const isTv=mode==="tv";
@@ -62,7 +61,7 @@ function say(id,msg){$(id).textContent=msg}
 function safeName(s){return s.normalize("NFKD").replace(/[^a-zA-Z0-9._-]/g,"_").slice(-90)||"gambar"}
 function renderSlides(){
  $("count").textContent=slides.length+" gambar";
- $("slides").innerHTML=slides.length?slides.map((s,i)=>'<article class="slide"><img class="thumb" src="'+s.url.replace(/&/g,"&amp;").replace(/"/g,"&quot;")+'" alt="Gambar '+(i+1)+'"><p>'+String(s.name||"Gambar").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))+'</p><button class="danger" data-delete="'+s.id+'">Hapus gambar</button></article>').join(""):'<p class="muted">Belum ada gambar. Silakan upload dari HP.</p>';
+ $("slides").innerHTML=slides.length?slides.map((s,i)=>'<article class="slide"><img class="thumb" src="'+s.imageData.replace(/&/g,"&amp;").replace(/"/g,"&quot;")+'" alt="Gambar '+(i+1)+'"><p>'+String(s.name||"Gambar").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))+'</p><button class="danger" data-delete="'+s.id+'">Hapus gambar</button></article>').join(""):'<p class="muted">Belum ada gambar. Silakan upload dari HP.</p>';
  $("slides").querySelectorAll("[data-delete]").forEach(b=>b.addEventListener("click",()=>removeSlide(b.dataset.delete)));
 }
 function renderTv(){
@@ -71,7 +70,7 @@ function renderTv(){
  $("tvEmpty").classList.add("hidden");$("tvImage").classList.remove("hidden");
  current=current%slides.length;
  $("tvImage").style.opacity="0";
- setTimeout(()=>{const s=slides[current];$("tvImage").src=s.url;$("tvCounter").textContent=(current+1)+" / "+slides.length;$("tvImage").style.opacity="1"},350);
+ setTimeout(()=>{const s=slides[current];$("tvImage").src=slides[current].imageData;$("tvCounter").textContent=(current+1)+" / "+slides.length;$("tvImage").style.opacity="1"},350);
 }
 function startSlideshow(){if(timer)clearInterval(timer);renderTv();timer=setInterval(()=>{if(!slides.length)return;current=(current+1)%slides.length;renderTv()},10000)}
 function listenSlides(){
@@ -85,7 +84,7 @@ function listenSlides(){
 async function removeSlide(id){
  if(!auth.currentUser||auth.currentUser.email?.toLowerCase()!==ADMIN)return;
  const s=slides.find(x=>x.id===id);if(!s||!confirm("Hapus gambar ini dari tayangan?"))return;
- try{await deleteDoc(doc(db,"tv_slides",id));if(s.storagePath)await deleteObject(ref(storage,s.storagePath));say("uploadMsg","Gambar berhasil dihapus.")}catch(e){console.error(e);alert("Gagal menghapus gambar: "+(e.code||e.message))}
+ try{await deleteDoc(doc(db,"tv_slides",id));say("uploadMsg","Gambar berhasil dihapus.")}catch(e){console.error(e);alert("Gagal menghapus gambar: "+(e.code||e.message))}
 }
 $("loginForm").addEventListener("submit",async e=>{
  e.preventDefault();$("loginBtn").disabled=true;say("loginMsg","Sedang masuk…");
@@ -101,23 +100,34 @@ onAuthStateChanged(auth,user=>{
 });
 $("logoutBtn").addEventListener("click",()=>signOut(auth));
 $("openTvBtn").addEventListener("click",()=>window.open(location.pathname+"?mode=tv","_blank"));
+async function compressImage(file){
+ const bitmap=await createImageBitmap(file);
+ let scale=Math.min(1,1600/bitmap.width,1000/bitmap.height),canvas=document.createElement("canvas"),blob=null;
+ for(let attempt=0;attempt<8;attempt++){
+  canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+  canvas.getContext("2d",{alpha:false}).drawImage(bitmap,0,0,canvas.width,canvas.height);
+  const quality=[.78,.7,.62,.55,.48,.42,.36,.3][attempt];
+  blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",quality));
+  if(blob&&blob.size<=650*1024)break;
+  scale*=.82;
+ }
+ bitmap.close?.();
+ if(!blob||blob.size>700*1024)throw new Error("Foto terlalu besar setelah dikompres. Coba foto lain.");
+ return await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob)});
+}
 $("uploadBtn").addEventListener("click",async()=>{
  if(!auth.currentUser||auth.currentUser.email?.toLowerCase()!==ADMIN){alert("Silakan login sebagai admin.");return}
  const files=[...$("files").files];if(!files.length){alert("Pilih gambar terlebih dahulu.");return}
- if(files.some(f=>!["image/jpeg","image/png","image/webp"].includes(f.type)||f.size>10*1024*1024)){alert("Pastikan semua gambar JPG, PNG, atau WebP dan maksimal 10 MB per gambar.");return}
+ if(files.some(f=>!["image/jpeg","image/png","image/webp"].includes(f.type)||f.size>20*1024*1024)){alert("Pilih JPG, PNG, atau WebP dengan ukuran file awal maksimal 20 MB.");return}
  $("uploadBtn").disabled=true;let done=0;
  try{
   for(const file of files){
-   const path="tv-display/"+auth.currentUser.uid+"/"+Date.now()+"_"+safeName(file.name);
-   const storageRef=ref(storage,path);
-   await uploadBytes(storageRef,file,{contentType:file.type});
-   const url=await getDownloadURL(storageRef);
-   try{await addDoc(collection(db,"tv_slides"),{name:file.name,url,storagePath:path,createdAt:Date.now(),uploadedBy:auth.currentUser.uid})}
-   catch(e){await deleteObject(storageRef);throw e}
-   done++;say("uploadMsg","Berhasil upload "+done+" dari "+files.length+" gambar…");
+   const imageData=await compressImage(file);
+   await addDoc(collection(db,"tv_slides"),{name:file.name,imageData,createdAt:Date.now(),uploadedBy:auth.currentUser.uid});
+   done++;say("uploadMsg","Berhasil menyimpan "+done+" dari "+files.length+" gambar…");
   }
-  $("files").value="";say("uploadMsg","Selesai! "+done+" gambar sudah tersimpan dan dikirim ke TV.");
- }catch(e){console.error(e);say("uploadMsg","Upload gagal: "+(e.code||e.message||"Periksa koneksi dan aturan Firebase."))}
+  $("files").value="";say("uploadMsg","Selesai! "+done+" gambar tersimpan di Firestore dan siap ditampilkan di TV.");
+ }catch(e){console.error(e);say("uploadMsg","Gagal menyimpan: "+(e.code||e.message||"Periksa aturan akses Firestore."))}
  finally{$("uploadBtn").disabled=false}
 });
 $("fullBtn").addEventListener("click",async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){}});
