@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#071426">
+<title>AnV TV Display</title>
+<style>
+:root{color-scheme:dark;--bg:#06111f;--panel:#102b46;--line:#1c496b;--cyan:#25d9ff;--muted:#a9bfd2;--green:#28d17c;--red:#ff647c}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top right,#12395b 0,#06111f 44%);color:#f3f8ff;font-family:Arial,sans-serif;min-height:100vh}
+header{padding:18px 16px;border-bottom:1px solid var(--line);background:#081a2b;position:sticky;top:0;z-index:3}.wrap{max-width:1100px;margin:auto}h1{margin:0;color:var(--cyan);letter-spacing:2px;font-size:24px}header small,.muted{color:var(--muted)}
+main{max-width:1100px;margin:auto;padding:22px 15px 50px}.hero{margin:8px 0 20px}.hero h2{font-size:clamp(26px,5vw,38px);margin:8px 0}.hero p{color:var(--muted);line-height:1.6}
+.card{background:linear-gradient(145deg,#102b46,#0b1d30);border:1px solid var(--line);border-radius:16px;padding:18px;margin:14px 0;box-shadow:0 12px 30px #0003}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>*{flex:1}.pill{display:inline-block;border-radius:20px;padding:5px 10px;background:#173e5d;color:#bcefff;font-size:12px}
+button{border:0;border-radius:10px;padding:12px 16px;background:#087fca;color:white;font-weight:700;cursor:pointer}button.secondary{background:#24435f}button.danger{background:#a92e49}button:disabled{opacity:.5;cursor:not-allowed}
+label{display:block;color:#c4d8e9;margin:12px 0 6px}input[type=email],input[type=password],input[type=file]{width:100%;padding:13px;border-radius:9px;border:1px solid #315878;background:#071a2c;color:white;font-size:15px}
+.notice{padding:12px;border-radius:10px;background:#102b46;color:var(--muted);line-height:1.5}.hidden{display:none!important}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.thumb{width:100%;height:155px;object-fit:cover;border-radius:10px;background:#02070d}.slide{background:#0a1c2e;border:1px solid var(--line);border-radius:13px;padding:10px;min-width:0}.slide p{overflow-wrap:anywhere;font-size:13px;color:var(--muted)}
+#tv{position:fixed;inset:0;background:#000;z-index:10;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#tvImage{max-width:100vw;max-height:100vh;width:100%;height:100%;object-fit:contain;opacity:1;transition:opacity .7s ease}
+#tvEmpty{color:#b8c6d3;text-align:center;padding:24px}#tvEmpty h2{color:var(--cyan);letter-spacing:3px}
+.tvTop{position:absolute;top:16px;left:18px;right:18px;display:flex;justify-content:space-between;align-items:center;color:#dbefff;text-shadow:0 2px 8px #000;pointer-events:none;opacity:.15;transition:opacity .3s}
+.tvTop:hover{opacity:1}.tvTop button{pointer-events:auto;background:#102b46cc}
+#tvCounter{font-size:13px;background:#0008;padding:7px 10px;border-radius:20px}
+footer{text-align:center;color:#7894aa;padding:20px;font-size:12px}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>ANV TV DISPLAY</h1><small>UPLOAD DARI HP · TAMPIL OTOMATIS DI TV</small></div></header>
+<main id="adminApp">
+<section class="hero"><span class="pill">ANV PLAY · FITUR DISPLAY</span><h2>Kelola gambar TV</h2><p>Upload gambar dari galeri HP. Setelah tersimpan, halaman TV akan menerima daftar gambar secara otomatis.</p></section>
+<section id="loginCard" class="card">
+<h2>Login Admin</h2><p class="muted">Gunakan akun admin AnV Play yang sudah ada.</p>
+<form id="loginForm"><label>Email admin</label><input id="email" type="email" autocomplete="username" required placeholder="Email admin AnV Play"><label>Password</label><input id="password" type="password" autocomplete="current-password" required placeholder="Password"><p><button id="loginBtn" type="submit">Masuk</button></p></form><div id="loginMsg" class="muted" role="status"></div>
+</section>
+<section id="manager" class="hidden">
+<div class="card"><div class="row"><div><h2>Upload gambar</h2><p class="muted">Pilih satu atau beberapa foto sekaligus. Format JPG, PNG, atau WebP. Maksimal 10 MB per foto.</p></div><button class="secondary" id="logoutBtn" style="flex:0 0 auto">Keluar</button></div>
+<label for="files">Pilih gambar dari galeri HP</label><input id="files" type="file" accept="image/jpeg,image/png,image/webp" multiple>
+<div class="row" style="margin-top:14px"><button id="uploadBtn">Upload gambar</button><button class="secondary" id="openTvBtn">Buka tampilan TV</button></div><p id="uploadMsg" class="muted" role="status"></p>
+</div>
+<div class="card"><div class="row"><div><h2>Daftar tayangan</h2><p class="muted">Gambar ditayangkan berurutan, berganti setiap 10 detik.</p></div><span class="pill" id="count">0 gambar</span></div><div id="slides" class="grid"><p class="muted">Memuat gambar…</p></div></div>
+<div class="notice">Alamat TV: buka halaman ini di TV dengan menambahkan <b>?mode=tv</b>. Biarkan halaman TV terbuka agar slideshow berjalan.</div>
+</section>
+</main>
+<div id="tv" class="hidden">
+<img id="tvImage" alt="Tayangan AnV TV Display" class="hidden">
+<div id="tvEmpty"><h2>ANV TV DISPLAY</h2><p>Belum ada gambar tayangan.</p><p>Upload gambar melalui HP admin AnV Play.</p></div>
+<div class="tvTop"><strong>ANV TV DISPLAY</strong><div class="row" style="flex:0 0 auto"><span id="tvCounter">0 / 0</span><button id="fullBtn">Layar penuh</button></div></div>
+</div>
+<footer>© AnV Play · AnV TV Display</footer>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
+import {getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
+import {getFirestore,collection,addDoc,deleteDoc,doc,onSnapshot,query,orderBy} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
+import {getStorage,ref,uploadBytes,getDownloadURL,deleteObject} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-storage.js";
+const firebaseConfig={apiKey:"AIzaSyA6VCyc_-MutGZzx2LRh--Ff3WQkwz0wuc",authDomain:"anv-play.firebaseapp.com",projectId:"anv-play",storageBucket:"anv-play.firebasestorage.app",messagingSenderId:"343859706516",appId:"1:343859706516:web:2158c8e6e4a4b767339281",measurementId:"G-T1S0QTQ72B"};
+const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app),storage=getStorage(app);
+const ADMIN="anvcellular@gmail.com",mode=new URLSearchParams(location.search).get("mode");
+const $=id=>document.getElementById(id);let slides=[],unsubscribe=null,timer=null,current=0;
+const isTv=mode==="tv";
+function say(id,msg){$(id).textContent=msg}
+function safeName(s){return s.normalize("NFKD").replace(/[^a-zA-Z0-9._-]/g,"_").slice(-90)||"gambar"}
+function renderSlides(){
+ $("count").textContent=slides.length+" gambar";
+ $("slides").innerHTML=slides.length?slides.map((s,i)=>'<article class="slide"><img class="thumb" src="'+s.url.replace(/&/g,"&amp;").replace(/"/g,"&quot;")+'" alt="Gambar '+(i+1)+'"><p>'+String(s.name||"Gambar").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))+'</p><button class="danger" data-delete="'+s.id+'">Hapus gambar</button></article>').join(""):'<p class="muted">Belum ada gambar. Silakan upload dari HP.</p>';
+ $("slides").querySelectorAll("[data-delete]").forEach(b=>b.addEventListener("click",()=>removeSlide(b.dataset.delete)));
+}
+function renderTv(){
+ if(!isTv)return;
+ if(!slides.length){$("tvImage").classList.add("hidden");$("tvEmpty").classList.remove("hidden");$("tvCounter").textContent="0 / 0";return}
+ $("tvEmpty").classList.add("hidden");$("tvImage").classList.remove("hidden");
+ current=current%slides.length;
+ $("tvImage").style.opacity="0";
+ setTimeout(()=>{const s=slides[current];$("tvImage").src=s.url;$("tvCounter").textContent=(current+1)+" / "+slides.length;$("tvImage").style.opacity="1"},350);
+}
+function startSlideshow(){if(timer)clearInterval(timer);renderTv();timer=setInterval(()=>{if(!slides.length)return;current=(current+1)%slides.length;renderTv()},10000)}
+function listenSlides(){
+ if(unsubscribe)unsubscribe();
+ unsubscribe=onSnapshot(query(collection(db,"tv_slides"),orderBy("createdAt","asc")),snap=>{
+ slides=snap.docs.map(d=>({id:d.id,...d.data()}));
+ if(current>=slides.length)current=0;
+ if(isTv){startSlideshow()}else if(auth.currentUser){renderSlides()}
+ },err=>{console.error(err);if(isTv){$("tvEmpty").innerHTML="<h2>ANV TV DISPLAY</h2><p>Gagal memuat tayangan. Periksa koneksi dan aturan akses Firebase.</p>"}else say("uploadMsg","Tidak dapat membaca daftar gambar. Periksa aturan akses Firestore.")});
+}
+async function removeSlide(id){
+ if(!auth.currentUser||auth.currentUser.email?.toLowerCase()!==ADMIN)return;
+ const s=slides.find(x=>x.id===id);if(!s||!confirm("Hapus gambar ini dari tayangan?"))return;
+ try{await deleteDoc(doc(db,"tv_slides",id));if(s.storagePath)await deleteObject(ref(storage,s.storagePath));say("uploadMsg","Gambar berhasil dihapus.")}catch(e){console.error(e);alert("Gagal menghapus gambar: "+(e.code||e.message))}
+}
+$("loginForm").addEventListener("submit",async e=>{
+ e.preventDefault();$("loginBtn").disabled=true;say("loginMsg","Sedang masuk…");
+ try{const cred=await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);if(cred.user.email?.toLowerCase()!==ADMIN){await signOut(auth);throw new Error("Akun ini bukan admin AnV Play.")}say("loginMsg","Login berhasil.")}
+ catch(err){say("loginMsg",err.message||"Login gagal. Periksa email dan password.")}
+ finally{$("loginBtn").disabled=false}
+});
+onAuthStateChanged(auth,user=>{
+ if(isTv)return;
+ const allowed=!!user&&user.email?.toLowerCase()===ADMIN;
+ $("loginCard").classList.toggle("hidden",allowed);$("manager").classList.toggle("hidden",!allowed);
+ if(allowed){listenSlides()}else{slides=[];if(unsubscribe){unsubscribe();unsubscribe=null}}
+});
+$("logoutBtn").addEventListener("click",()=>signOut(auth));
+$("openTvBtn").addEventListener("click",()=>window.open(location.pathname+"?mode=tv","_blank"));
+$("uploadBtn").addEventListener("click",async()=>{
+ if(!auth.currentUser||auth.currentUser.email?.toLowerCase()!==ADMIN){alert("Silakan login sebagai admin.");return}
+ const files=[...$("files").files];if(!files.length){alert("Pilih gambar terlebih dahulu.");return}
+ if(files.some(f=>!["image/jpeg","image/png","image/webp"].includes(f.type)||f.size>10*1024*1024)){alert("Pastikan semua gambar JPG, PNG, atau WebP dan maksimal 10 MB per gambar.");return}
+ $("uploadBtn").disabled=true;let done=0;
+ try{
+  for(const file of files){
+   const path="tv-display/"+auth.currentUser.uid+"/"+Date.now()+"_"+safeName(file.name);
+   const storageRef=ref(storage,path);
+   await uploadBytes(storageRef,file,{contentType:file.type});
+   const url=await getDownloadURL(storageRef);
+   try{await addDoc(collection(db,"tv_slides"),{name:file.name,url,storagePath:path,createdAt:Date.now(),uploadedBy:auth.currentUser.uid})}
+   catch(e){await deleteObject(storageRef);throw e}
+   done++;say("uploadMsg","Berhasil upload "+done+" dari "+files.length+" gambar…");
+  }
+  $("files").value="";say("uploadMsg","Selesai! "+done+" gambar sudah tersimpan dan dikirim ke TV.");
+ }catch(e){console.error(e);say("uploadMsg","Upload gagal: "+(e.code||e.message||"Periksa koneksi dan aturan Firebase."))}
+ finally{$("uploadBtn").disabled=false}
+});
+$("fullBtn").addEventListener("click",async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){}});
+if(isTv){
+ $("adminApp").classList.add("hidden");$("tv").classList.remove("hidden");document.body.style.background="#000";document.querySelector("header").classList.add("hidden");document.querySelector("footer").classList.add("hidden");listenSlides();startSlideshow();
+}
+</script>
+</body>
+</html>
